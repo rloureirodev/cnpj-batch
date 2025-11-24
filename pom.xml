@@ -10,7 +10,7 @@
         <groupId>br.com.simplificarest</groupId>
         <artifactId>cnpj</artifactId>
         <version>1.0.0</version>
-        <relativePath>../pom.xml</relativePath>
+        <relativePath>../cnpj/pom.xml</relativePath>
     </parent>
 
     <groupId>br.com.simplificarest</groupId>

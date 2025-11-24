@@ -1,13 +1,10 @@
 package br.com.simplificarest.cnpjbatch.batch.config;
 
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.batch.core.Job;
@@ -21,14 +18,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import br.com.simplificarest.cnpjbatch.batch.service.ArquivoService;
-import br.com.simplificarest.cnpjbatch.batch.service.BatchProcessLogService;
-import br.com.simplificarest.cnpjbatch.batch.service.CopyService;
-import br.com.simplificarest.cnpjbatch.batch.service.DownloadService;
 import br.com.simplificarest.cnpjbatch.batch.service.FileProcessorService;
-import br.com.simplificarest.cnpjbatch.batch.service.StageHashService;
-import br.com.simplificarest.cnpjbatch.batch.service.UnzipService;
-import br.com.simplificarest.cnpjdomain.enm.BatchStage;
-import br.com.simplificarest.cnpjdomain.enm.CnpjFileType;
+import br.com.simplificarest.cnpjbatch.batch.service.StagePreparationService;
+import br.com.simplificarest.cnpjbatch.service.merge.MergeOrchestrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,17 +33,22 @@ public class CnpjBatchJobConfig {
     private final PlatformTransactionManager tx;
     private final ArquivoService arquivoService;
     private final FileProcessorService processor; // NOVO
+    private final MergeOrchestrationService mergeMasterService;
+    private final StagePreparationService stagePrepService;
 
-    private static final Path BASE = Paths.get("C:", "temp", "cnpj");
+    private static final Path BASE = Paths.get("G:", "temp", "cnpj");
 
     @Bean
     public Job cnpjJob() {
         return new JobBuilder("cnpjJob", jobRepository)
-                .start(processarArquivosStep())
-                .next(hashStep())
+                //.start(processarArquivosStep())
+        		.start(prepareStagesStep())
+                .next(mergeStep())
                 .next(cleanupStep())
                 .build();
     }
+    
+    
 
     @Bean
     public Step processarArquivosStep() {
@@ -84,16 +81,35 @@ public class CnpjBatchJobConfig {
                 }, tx)
                 .build();
     }
-
+    
     @Bean
-    public Step hashStep() {
-        return new StepBuilder("hashStep", jobRepository)
-                .tasklet((contribution, ctx) -> {
-                    processor.aplicarHashes();
+    public Step prepareStagesStep() {
+        return new StepBuilder("prepareStagesStep", jobRepository)
+                .tasklet((c, t) -> {
+
+                    stagePrepService.prepararStages(); // CHAVE
+
                     return RepeatStatus.FINISHED;
                 }, tx)
                 .build();
     }
+    
+    @Bean
+    public Step mergeStep() {
+        return new StepBuilder("mergeStep", jobRepository)
+                .tasklet((c, t) -> {
+
+                    var params = t.getStepContext().getJobParameters();
+                    String anoMes = params.get("anoMes").toString();
+
+                    mergeMasterService.executarTodos(anoMes);
+
+                    return RepeatStatus.FINISHED;
+                }, tx)
+                .build();
+    }
+
+
 
     @Bean
     public Step cleanupStep() {
