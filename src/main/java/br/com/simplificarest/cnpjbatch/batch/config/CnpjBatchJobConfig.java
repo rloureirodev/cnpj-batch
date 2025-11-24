@@ -42,8 +42,8 @@ public class CnpjBatchJobConfig {
     public Job cnpjJob() {
         return new JobBuilder("cnpjJob", jobRepository)
                 //.start(processarArquivosStep())
-        		.start(prepareStagesStep())
-                .next(mergeStep())
+        		//.next(prepareStagesStep())
+                .start(mergeStep())
                 .next(cleanupStep())
                 .build();
     }
@@ -87,7 +87,10 @@ public class CnpjBatchJobConfig {
         return new StepBuilder("prepareStagesStep", jobRepository)
                 .tasklet((c, t) -> {
 
-                    stagePrepService.prepararStages(); // CHAVE
+                    var params = t.getStepContext().getJobParameters();
+                    String anoMes = params.get("anoMes").toString();
+
+                    stagePrepService.prepararStages(anoMes); // CHAVE
 
                     return RepeatStatus.FINISHED;
                 }, tx)

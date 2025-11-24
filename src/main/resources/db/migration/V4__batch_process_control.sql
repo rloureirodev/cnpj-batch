@@ -1,4 +1,4 @@
-CREATE TABLE controle_processos (
+CREATE TABLE if not exists controle_processos (
     id BIGSERIAL PRIMARY KEY,
 
     job_name VARCHAR(200) NOT NULL,

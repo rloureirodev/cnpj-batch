@@ -3,6 +3,7 @@ package br.com.simplificarest.cnpjbatch.batch.service;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import br.com.simplificarest.cnpjdomain.enm.BatchStage;
 import br.com.simplificarest.cnpjdomain.enm.CnpjFileType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,54 +14,89 @@ import lombok.extern.slf4j.Slf4j;
 public class StagePreparationService {
 
     private final JdbcTemplate jdbc;
+    private final BatchProcessLogService logService;
 
-    public void prepararStages() {
+    public void prepararStages(String anoMes) {
+
+        log.info("==========================================================");
+        log.info(" INICIANDO PREPARAÇÃO DAS TABELAS STAGE");
+        log.info("==========================================================");
 
         for (CnpjFileType tipo : CnpjFileType.values()) {
 
             String tabela = tipo.getStageTable();
+            long logId = 0;
 
-            log.info("Preparando stage {}", tabela);
+            try {
+                log.info("----------------------------------------------------------");
+                log.info(">>> Preparando stage {}", tabela);
 
-            adicionarIdSeNaoExistir(tabela);
-            criarIndiceId(tabela);
+                logId = logService.start(
+                        BatchStage.PREPARACAO,
+                        "cnpjJob",
+                        anoMes,
+                        null,
+                        null,
+                        tabela,
+                        ""
+                );
+
+                prepararTabela(tabela);
+
+                logService.ok(logId);
+
+                log.info("<<< Stage {} finalizada com sucesso", tabela);
+                log.info("----------------------------------------------------------");
+
+            } catch (Exception e) {
+                logService.error(logId, e);
+                log.error("ERRO ao preparar stage {}: {}", tabela, e.getMessage());
+                throw e;
+            }
         }
+
+        log.info("==========================================================");
+        log.info(" TODAS AS STAGES FORAM PREPARADAS");
+        log.info("==========================================================");
     }
 
-    private void adicionarIdSeNaoExistir(String tabela) {
-        String checkIdExists = """
-            SELECT COUNT(*) 
-            FROM information_schema.columns 
-            WHERE table_schema = 'cnpj' 
-              AND table_name = ? 
-              AND column_name = 'id'
-            """;
 
-        Integer existe = jdbc.queryForObject(checkIdExists, Integer.class, tabela);
+    private void prepararTabela(String tabela) {
 
-        if (existe != null && existe == 0) {
-            log.info("Adicionando coluna id BIGSERIAL em {}", tabela);
+        // 1. contar linhas
+        log.info("[{}] Obtendo contagem de linhas...", tabela);
+        Long count = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM cnpj." + tabela,
+                Long.class
+        );
+        log.info("[{}] Total de linhas: {}", tabela, count);
 
-            jdbc.execute("ALTER TABLE cnpj." + tabela + " ADD COLUMN id BIGSERIAL");
-        }
-    }
+        // 2. criar tabela temporária com ID
+        log.info("[{}] Criando tabela temporária com ID via CTAS...", tabela);
+        long inicio = System.currentTimeMillis();
 
-    private void criarIndiceId(String tabela) {
-        String indexName = "idx_" + tabela + "_id";
+        String sql = """
+        	    CREATE TABLE cnpj.%s_tmp AS
+        	    SELECT row_number() OVER () AS id, *
+        	    FROM cnpj.%s
+        	""".formatted(tabela, tabela);
 
-        String existsSql = """
-            SELECT COUNT(*) 
-            FROM pg_indexes 
-            WHERE schemaname = 'cnpj' 
-              AND tablename = ? 
-              AND indexname = ?
-            """;
+        	jdbc.execute(sql);
+        	
+        long fim = System.currentTimeMillis();
+        log.info("[{}] CTAS concluído em {} ms", tabela, (fim - inicio));
 
-        Integer exists = jdbc.queryForObject(existsSql, Integer.class, tabela, indexName);
+        // 3. substituir tabela original
+        log.info("[{}] Removendo tabela original...", tabela);
+        jdbc.execute("DROP TABLE cnpj." + tabela);
 
-        if (exists != null && exists == 0) {
-            log.info("Criando índice {} para {}", indexName, tabela);
-            jdbc.execute("CREATE INDEX " + indexName + " ON cnpj." + tabela + "(id)");
-        }
+        log.info("[{}] Renomeando tabela _tmp para tabela original...", tabela);
+        jdbc.execute("ALTER TABLE cnpj." + tabela + "_tmp RENAME TO " + tabela);
+
+        // 4. criar índices
+        log.info("[{}] Criando índice IDX_{}_ID...", tabela, tabela);
+        jdbc.execute("CREATE INDEX IF NOT EXISTS idx_" + tabela + "_id ON cnpj." + tabela + "(id)");
+
+        log.info("[{}] Índices criados", tabela);
     }
 }

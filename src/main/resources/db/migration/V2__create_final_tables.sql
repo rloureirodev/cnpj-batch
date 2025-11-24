@@ -7,10 +7,10 @@
 CREATE TABLE empresa (
     cnpj_basico VARCHAR(8) PRIMARY KEY,
     razao_social VARCHAR(255),
-    natureza_juridica INTEGER,
-    qualificacao_responsavel INTEGER,
-    capital_social NUMERIC(18,2),
-    porte INTEGER,
+    natureza_juridica VARCHAR(20),
+    qualificacao_responsavel VARCHAR(20),
+    capital_social VARCHAR(255),
+    porte VARCHAR(20),
     ente_federativo_responsavel VARCHAR(255),
     hash VARCHAR(32),
     atualizado_em TIMESTAMP DEFAULT NOW()
@@ -26,15 +26,15 @@ CREATE TABLE estabelecimento (
     cnpj_ordem                  VARCHAR(4),
     cnpj_dv                     VARCHAR(2),
 
-    identificador_matriz_filial INTEGER,
+    identificador_matriz_filial VARCHAR(2),
     nome_fantasia               VARCHAR(4000),
-    situacao_cadastral          INTEGER,
+    situacao_cadastral          VARCHAR(2),
 
     data_situacao_cadastral     VARCHAR(8),
-    motivo_situacao_cadastral   INTEGER,
+    motivo_situacao_cadastral   VARCHAR(20),
 
     nome_cidade_exterior        VARCHAR(4000),
-    pais                        INTEGER,
+    pais                        VARCHAR(10),
 
     data_inicio_atividade       VARCHAR(8),
 
@@ -49,7 +49,7 @@ CREATE TABLE estabelecimento (
 
     cep                         VARCHAR(20),
     uf                          VARCHAR(2),
-    municipio                   INTEGER,
+    municipio                   VARCHAR(15),
 
     ddd1                        VARCHAR(50),
     telefone1                   VARCHAR(255),
@@ -74,10 +74,10 @@ CREATE UNIQUE INDEX est_hash_uk ON estabelecimento(hash);
 
 CREATE TABLE socio (
     cnpj_basico VARCHAR(8),
-    identificador_de_socio INTEGER,
+    identificador_de_socio VARCHAR(8),
     nome_do_socio VARCHAR(255),
     cnpj_cpf_do_socio VARCHAR(20),
-    qualificacao_socio INTEGER,
+    qualificacao_socio  VARCHAR(20),
 
     data_entrada_sociedade VARCHAR(8),
     pais VARCHAR(255),

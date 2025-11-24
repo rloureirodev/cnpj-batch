@@ -46,6 +46,7 @@ public class MergeExecutorService {
         } catch (Exception e) {
             logService.error(logId, e);
             log.error("Erro ao executar {} bloco {} - {}: {}", procedure, inicio, fim, e.getMessage());
+            e.printStackTrace();
             throw e;
         }
     }

@@ -11,8 +11,7 @@ CREATE TABLE stage_empresa (
     qualificacao_responsavel     VARCHAR(255),
     capital_social               VARCHAR(255),
     porte                        VARCHAR(255),
-    ente_federativo_responsavel  VARCHAR(4000),
-    hash                         VARCHAR(255)
+    ente_federativo_responsavel  VARCHAR(4000)
 );
 
 -- ---------- stage_estabelecimento ----------
@@ -22,7 +21,7 @@ CREATE TABLE stage_estabelecimento (
     cnpj_ordem                      VARCHAR(255),
     cnpj_dv                         VARCHAR(255),
     identificador_matriz_filial     VARCHAR(255),
-    nome_fantasia                   VARCHAR(4000),
+    nome_fantasia                   TEXT,
     situacao_cadastral              VARCHAR(255),
     data_situacao_cadastral         VARCHAR(255),
     motivo_situacao_cadastral       VARCHAR(255),
@@ -30,7 +29,7 @@ CREATE TABLE stage_estabelecimento (
     pais                            VARCHAR(255),
     data_inicio_atividade           VARCHAR(255),
     cnae_fiscal_principal           VARCHAR(255),
-    cnae_fiscal_secundaria          VARCHAR(4000),
+    cnae_fiscal_secundaria          TEXT,
     tipo_logradouro                 VARCHAR(4000),
     logradouro                      VARCHAR(4000),
     numero                          VARCHAR(255),
@@ -46,9 +45,8 @@ CREATE TABLE stage_estabelecimento (
     ddd_fax                         VARCHAR(50),
     fax                             VARCHAR(255),
     email                           VARCHAR(4000),
-    situacao_especial               VARCHAR(4000),
-    data_situacao_especial          VARCHAR(255),
-    hash                            VARCHAR(255)
+    situacao_especial               TEXT,
+    data_situacao_especial          VARCHAR(255)
 );
 
 -- ---------- stage_socios ----------
@@ -64,8 +62,7 @@ CREATE TABLE stage_socios (
     representante_legal             VARCHAR(255),
     nome_representante              VARCHAR(4000),
     qualificacao_representante      VARCHAR(255),
-    faixa_etaria                    VARCHAR(255),
-    hash                            VARCHAR(255)
+    faixa_etaria                    VARCHAR(255)
 );
 
 -- ---------- stage_simples ----------
@@ -77,59 +74,49 @@ CREATE TABLE stage_simples (
     data_exclusao_do_simples        VARCHAR(255),
     opcao_pelo_mei                  VARCHAR(255),
     data_opcao_pelo_mei             VARCHAR(255),
-    data_exclusao_do_mei            VARCHAR(255),
-    hash                            VARCHAR(255)
+    data_exclusao_do_mei            VARCHAR(255)
 );
 
 -- ---------- stage_municipios ----------
 DROP TABLE IF EXISTS stage_municipios;
 CREATE TABLE stage_municipios (
     codigo                         VARCHAR(255),
-    nome                           VARCHAR(4000),
-    uf                             VARCHAR(255),
-    hash                            VARCHAR(255)
+    nome                           VARCHAR(4000)
 );
 
 -- ---------- stage_cnaes ----------
 DROP TABLE IF EXISTS stage_cnaes;
 CREATE TABLE stage_cnaes (
     codigo                         VARCHAR(255),
-    descricao                      VARCHAR(4000),
-    hash                            VARCHAR(255)
+    descricao                      VARCHAR(4000)
 );
 
 -- ---------- stage_qualificacoes ----------
 DROP TABLE IF EXISTS stage_qualificacoes;
 CREATE TABLE stage_qualificacoes (
     codigo                         VARCHAR(255),
-    descricao                      VARCHAR(4000),
-    hash                            VARCHAR(255)
+    descricao                      VARCHAR(4000)
 );
 
 -- ---------- stage_naturezas ----------
 DROP TABLE IF EXISTS stage_naturezas;
 CREATE TABLE stage_naturezas (
     codigo                         VARCHAR(255),
-    descricao                      VARCHAR(4000),
-    hash                            VARCHAR(255)
+    descricao                      VARCHAR(4000)
 );
 
 -- ---------- stage_paises ----------
 DROP TABLE IF EXISTS stage_paises;
 CREATE TABLE stage_paises (
     codigo                         VARCHAR(255),
-    nome                           VARCHAR(4000),
-    hash                            VARCHAR(255)
+    nome                           VARCHAR(4000)
 );
 
 -- ---------- stage_motivos ----------
 DROP TABLE IF EXISTS stage_motivos;
 CREATE TABLE stage_motivos (
     codigo                         VARCHAR(255),
-    descricao                      VARCHAR(4000),
-    hash                            VARCHAR(255)
+    descricao                      VARCHAR(4000)
 );
 
--- Índices opcionais (não obrigatórios)
-CREATE INDEX IF NOT EXISTS idx_stage_empresa_cnpj ON stage_empresa(cnpj_basico);
-CREATE INDEX IF NOT EXISTS idx_stage_estab_cnpj ON stage_estabelecimento(cnpj_basico);
+
