@@ -21,7 +21,6 @@ public class FileProcessorService {
     private final UnzipService unzipService;
     private final CopyService copyService;
     private final BatchProcessLogService logService;
-    private final StageHashService stageHashService;
 
     // --------- PROCESSA UM ARQUIVO COMPLETO ---------
     public void processarUmArquivo(String url, String anoMes, Path zipDir, Path csvDir) {
@@ -43,6 +42,7 @@ public class FileProcessorService {
         	realizarCopy(csv, tabela, nome, anoMes); // <-- envia ZIP
         } catch (Exception e) {
             log.error("Erro processando arquivo {}: {}", nome, e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -106,13 +106,6 @@ public class FileProcessorService {
         }
     }
 
-    // --------- HASH NAS TABELAS ---------
-    public void aplicarHashes() {
-        stageHashService.hashEmpresa();
-        stageHashService.hashEstabelecimento();
-        stageHashService.hashSocios();
-        stageHashService.hashSimples();
-    }
 
 
     // --------- HELPERS ---------
