@@ -1,5 +1,0 @@
-ALTER TABLE stage_municipios DROP COLUMN IF EXISTS uf;
-ALTER TABLE stage_empresa DROP COLUMN IF EXISTS hash;
-ALTER TABLE stage_estabelecimento DROP COLUMN IF EXISTS hash;
-ALTER TABLE stage_socios DROP COLUMN IF EXISTS hash;
-ALTER TABLE stage_simples DROP COLUMN IF EXISTS hash;

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.stereotype.Service;
 
@@ -21,12 +22,12 @@ public class MergeOrchestrationService {
     public void executarTodos(String anoMes) {
 
         Map<String, CnpjFileType> map = Map.of(
+        		"proc_merge_cnaes",           CnpjFileType.CNAE,
+        		"proc_merge_motivos",         CnpjFileType.MOTIVO,
                 "proc_merge_municipios",      CnpjFileType.MUNICIPIO,
-                "proc_merge_cnaes",           CnpjFileType.CNAE,
-                "proc_merge_paises",          CnpjFileType.PAIS,
                 "proc_merge_naturezas",       CnpjFileType.NATUREZA,
+                "proc_merge_paises",          CnpjFileType.PAIS,
                 "proc_merge_qualificacoes",   CnpjFileType.QUALIFICACAO,
-                "proc_merge_motivos",         CnpjFileType.MOTIVO,
                 "proc_merge_empresa",         CnpjFileType.EMPRESA
                 //"proc_merge_estabelecimento", CnpjFileType.ESTABELECIMENTO,
                 //"proc_merge_socio",           CnpjFileType.SOCIO,
@@ -34,16 +35,16 @@ public class MergeOrchestrationService {
         );
 
         List<String> procedures = List.of(
+        		"proc_merge_cnaes",
+        		"proc_merge_motivos",
                 "proc_merge_municipios",
-                "proc_merge_cnaes",
-                "proc_merge_paises",
                 "proc_merge_naturezas",
+                "proc_merge_paises",
                 "proc_merge_qualificacoes",
-                "proc_merge_motivos",
-                "proc_merge_empresa",
-                "proc_merge_estabelecimento",
-                "proc_merge_socio",
-                "proc_merge_simples"
+                "proc_merge_empresa"
+                //"proc_merge_estabelecimento",
+                //"proc_merge_socio",
+                //"proc_merge_simples"
         );
 
         procedures.forEach(proc -> {
@@ -55,8 +56,8 @@ public class MergeOrchestrationService {
     private void executarParalelo(String procedure, String stageTable, String anoMes) {
 
         long total = executor.countStage(stageTable);
-        long passo = 5_000_000L;
-        int threads = 4;
+        long passo = 2_000_000L;
+        int threads = 2;
 
         log.info(
             "Executando {} de forma paralela | stage={} | total={} registros | passo={} | threads={}",
@@ -93,23 +94,18 @@ public class MergeOrchestrationService {
         }
 
         pool.shutdown();
-        log.info("ThreadPool encerrado para procedure {}", procedure);
+
+        try {
+            if (!pool.awaitTermination(3, TimeUnit.HOURS)) {
+                pool.shutdownNow();
+                log.warn("Timeout ao aguardar término das threads do merge {}", procedure);
+            }
+        } catch (InterruptedException e) {
+            pool.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+
+        log.info("Todas as threads finalizaram corretamente para procedure {}", procedure);
     }
 
-
-
-//    public void executarTodos(String anoMes) {
-//    	executor.executar("proc_merge_municipios", anoMes);
-//    	executor.executar("proc_merge_cnaes", anoMes);
-//    	executor.executar("proc_merge_paises", anoMes);
-//        executor.executar("proc_merge_naturezas", anoMes);
-//        executor.executar("proc_merge_qualificacoes", anoMes);
-//        executor.executar("proc_merge_motivos", anoMes);
-//        //executor.executar("proc_merge_empresa", anoMes);
-//        //executor.executar("proc_merge_estabelecimento", anoMes);
-//        //executor.executar("proc_merge_socio", anoMes);
-//        executor.executar("proc_merge_simples", anoMes);
-//    }
-    
-    
 }
