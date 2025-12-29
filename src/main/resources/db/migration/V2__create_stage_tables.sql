@@ -3,7 +3,7 @@
 -- ====================================
 
 -- ---------- stage_empresa ----------
-DROP TABLE IF EXISTS stage_empresa;
+DROP TABLE IF EXISTS stage_empresa; 
 CREATE TABLE stage_empresa (
     cnpj_basico                  VARCHAR(255),
     razao_social                 VARCHAR(4000),

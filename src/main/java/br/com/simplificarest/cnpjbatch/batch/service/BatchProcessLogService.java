@@ -72,4 +72,16 @@ public class BatchProcessLogService {
     }
     
     
+    public boolean isBuildNewFinished(String newTable, String anoMes) {
+        Long count = repo.countByEtapaAndTabelaStageAndAnoMesAndStatus(
+                BatchStage.BUILD_NEW.name(),
+                newTable,
+                anoMes,
+                "OK"
+        );
+        return count != null && count > 0;
+    }
+    
+    
+    
 }

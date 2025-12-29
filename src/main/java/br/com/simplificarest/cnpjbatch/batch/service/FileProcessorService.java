@@ -70,13 +70,24 @@ public class FileProcessorService {
             logService.ok(id);
         }
 
-        // LOCALIZA CSV
-        try (var walk = Files.walk(extractDir)) {
-            return walk
-                    .filter(p -> p.getFileName().toString().toUpperCase().endsWith(type.getIdentifier()))
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalStateException("CSV não encontrado em " + extractDir));
-        }
+		// LOCALIZA CSV
+		try (var walk = Files.walk(extractDir)) {
+			return walk.filter(p -> {
+				String f = p.getFileName().toString().toUpperCase();
+				if (type == CnpjFileType.SIMPLES)
+					return f.contains("SIMPLES.CSV"); // regra especial
+
+				return f.endsWith(type.getIdentifier());
+			}).findFirst().orElseThrow(() -> new IllegalStateException("CSV não encontrado em " + extractDir));
+		}
+
+//        // LOCALIZA CSV
+//        try (var walk = Files.walk(extractDir)) {
+//            return walk
+//                    .filter(p -> p.getFileName().toString().toUpperCase().endsWith(type.getIdentifier()))
+//                    .findFirst()
+//                    .orElseThrow(() -> new IllegalStateException("CSV não encontrado em " + extractDir));
+//        }
     }
 
     // --------- COPY COM HASH ---------

@@ -6,6 +6,7 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -19,8 +20,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import br.com.simplificarest.cnpjbatch.batch.service.ArquivoService;
 import br.com.simplificarest.cnpjbatch.batch.service.FileProcessorService;
-import br.com.simplificarest.cnpjbatch.batch.service.StagePreparationService;
-import br.com.simplificarest.cnpjbatch.service.merge.MergeOrchestrationService;
+import br.com.simplificarest.cnpjbatch.swap.SwapOrchestrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,26 +32,28 @@ public class CnpjBatchJobConfig {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager tx;
     private final ArquivoService arquivoService;
-    private final FileProcessorService processor; // NOVO
-    private final MergeOrchestrationService mergeMasterService;
-    private final StagePreparationService stagePrepService;
+    private final FileProcessorService processor;
+    private final SwapOrchestrationService swap;
 
-    private static final Path BASE = Paths.get("G:", "temp", "cnpj");
+    private static final Path BASE = Paths.get("D:", "CNPJ", "temp", "cnpj");
+    
+    
 
     @Bean
-    public Job cnpjJob() {
+    Job cnpjJob() {
         return new JobBuilder("cnpjJob", jobRepository)
                 //.start(processarArquivosStep())
-        		//.next(prepareStagesStep())
-                .start(mergeStep())
+                .start(buildStep())
+                .next(indexFinalStep())
+                .next(swapTablesStep())
+                .next(cleanStageStep())
+                .next(dropOldsStep())
                 .next(cleanupStep())
                 .build();
     }
-    
-    
 
     @Bean
-    public Step processarArquivosStep() {
+    Step processarArquivosStep() {
         return new StepBuilder("processarArquivosStep", jobRepository)
                 .tasklet((contribution, context) -> {
 
@@ -59,7 +61,7 @@ public class CnpjBatchJobConfig {
                     String anoMes = params.get("anoMes") != null
                             ? params.get("anoMes").toString()
                             : LocalDate.now().minusMonths(1)
-                                    .format(DateTimeFormatter.ofPattern("yyyy-MM"));
+                            .format(DateTimeFormatter.ofPattern("yyyy-MM"));
 
                     List<String> arquivos = arquivoService
                             .listarArquivosDoMes(anoMes)
@@ -81,43 +83,58 @@ public class CnpjBatchJobConfig {
                 }, tx)
                 .build();
     }
-    
-    @Bean
-    public Step prepareStagesStep() {
-        return new StepBuilder("prepareStagesStep", jobRepository)
-                .tasklet((c, t) -> {
 
-                    var params = t.getStepContext().getJobParameters();
-                    String anoMes = params.get("anoMes").toString();
 
-                    stagePrepService.prepararStages(anoMes); // CHAVE
-
-                    return RepeatStatus.FINISHED;
-                }, tx)
-                .build();
+    @Bean Step buildStep() {
+        return step("buildStep", anoMes -> swap.buildNewTables(anoMes));
     }
-    
-    @Bean
-    public Step mergeStep() {
-        return new StepBuilder("mergeStep", jobRepository)
-                .tasklet((c, t) -> {
 
-                    var params = t.getStepContext().getJobParameters();
-                    String anoMes = params.get("anoMes").toString();
+    @Bean Step indexFinalStep() {
+        return step("indexFinalStep", anoMes -> swap.indexFinal(anoMes));
+    }
 
-                    mergeMasterService.executarTodos(anoMes);
+    @Bean Step swapTablesStep() {
+        return step("swapTablesStep", anoMes -> swap.swap(anoMes));
+    }
 
-                    return RepeatStatus.FINISHED;
-                }, tx)
-                .build();
+    @Bean Step cleanStageStep() {
+        return step("cleanStageStep", anoMes -> swap.cleanStage(anoMes));
+    }
+
+    @Bean Step dropOldsStep() {
+        return step("dropOldsStep", anoMes -> swap.dropOlds(anoMes));
     }
 
 
-
     @Bean
-    public Step cleanupStep() {
+    Step cleanupStep() {
         return new StepBuilder("cleanupStep", jobRepository)
                 .tasklet((c, t) -> RepeatStatus.FINISHED, tx)
+                .build();
+    }
+
+//    private Step step(String name, Runnable fn) {
+//        return new StepBuilder(name, jobRepository)
+//                .tasklet((c, t) -> {
+//                    fn.run();
+//                    return RepeatStatus.FINISHED;
+//                }, tx)
+//                .build();
+//    }
+    
+    private Step step(String name, Consumer<String> fn) {
+        return new StepBuilder(name, jobRepository)
+                .tasklet((c, t) -> {
+
+                    var params = t.getStepContext().getJobParameters();
+                    String anoMes = params.get("anoMes") != null
+                            ? params.get("anoMes").toString()
+                            : LocalDate.now().minusMonths(1)
+                                    .format(DateTimeFormatter.ofPattern("yyyy-MM"));
+
+                    fn.accept(anoMes);
+                    return RepeatStatus.FINISHED;
+                }, tx)
                 .build();
     }
 }

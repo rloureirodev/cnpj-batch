@@ -30,7 +30,7 @@ public class BatchController {
 
         try {
             JobParameters params = new JobParametersBuilder()
-                    .addString("anoMes", anoMes != null ? anoMes : "") 
+                    .addString("anoMes", anoMes != null ? anoMes : "") // parâmetro opcional
                     .addLong("startAt", System.currentTimeMillis())
                     .toJobParameters();
 
